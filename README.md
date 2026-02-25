@@ -23,8 +23,19 @@ urdf/                               ← generated outputs
   robot_fixed_axes.urdf
   robot_with_limits.urdf
   robot_gazebo.urdf
-  joints/gazebo_joints.xacro
-  links/gazebo_links.xacro
+  {name}.urdf.xacro                 ← main xacro with includes
+  joints/                           ← per-section joint xacro files
+    body_joints.xacro
+    left_arm_joints.xacro
+    right_arm_joints.xacro
+    left_foot_joints.xacro
+    right_foot_joints.xacro
+  links/                            ← per-section link xacro files
+    body_links.xacro
+    left_arm_links.xacro
+    right_arm_links.xacro
+    left_foot_links.xacro
+    right_foot_links.xacro
   meshes/
     visual/*.stl
     collision/*.stl
@@ -48,7 +59,7 @@ urdf/robot_with_limits.urdf (joint limits from YAML)
 urdf/robot_gazebo.urdf (decimated visual + convex collision meshes)
     │
     ▼  5. split_urdf.py
-urdf/joints/<name>_joints.xacro + urdf/links/<name>_links.xacro
+urdf/{name}.urdf.xacro + urdf/joints/*_joints.xacro + urdf/links/*_links.xacro
     │
     ▼  deploy to robot_description package
 ```
@@ -83,8 +94,9 @@ python util/scripts/build_description.py /path/to/dual_arm_description --skip-si
 
 ### What it deploys
 
-- `urdf/joints/<name>_joints.xacro` — all joints organized by body section
-- `urdf/links/<name>_links.xacro` — all links organized by body section
+- `urdf/{name}.urdf.xacro` — main xacro with includes for each section
+- `urdf/joints/*_joints.xacro` — joint files per body section (body, left_arm, right_arm, left_foot, right_foot)
+- `urdf/links/*_links.xacro` — link files per body section
 - `meshes/visual/*.stl` — decimated visual meshes
 - `meshes/collision/*.stl` — convex hull collision meshes
 
@@ -251,28 +263,49 @@ python util/scripts/simplify_meshes.py -i urdf/robot_with_limits.urdf -o urdf/ro
 
 ## Step 5: Split into xacro — `split_urdf.py`
 
-Splits a monolithic URDF into separate xacro files for joints and links, organized by body section.
+Splits a monolithic URDF into separate xacro files per body section, matching the `full_robot_description` structure.
+
+### What it generates
+
+```
+urdf/
+  {name}.urdf.xacro                  ← main file with xacro:include
+  joints/
+    body_joints.xacro                ← waist joints + xacro args (fixed_legs, only_left)
+    left_arm_joints.xacro
+    right_arm_joints.xacro
+    left_foot_joints.xacro           ← leg joints (${leg_joint_type} when --fixed-legs)
+    right_foot_joints.xacro
+  links/
+    body_links.xacro                 ← base + torso links
+    left_arm_links.xacro
+    right_arm_links.xacro
+    left_foot_links.xacro
+    right_foot_links.xacro
+```
 
 ### What it does
 
-- Classifies joints/links into sections: Waist, Left Arm, Right Arm, Left Leg, Right Leg
+- Classifies joints/links into sections: Body, Left Arm, Right Arm, Left Foot, Right Foot
+- Generates one xacro file per section (joints and links separately)
+- Generates a main `.urdf.xacro` with `xacro:include` for each section + world joint
 - Sorts joints in kinematic chain order (proximal → distal)
 - Adds `<dynamics>` elements to joints
 - Rewrites mesh paths to `package://<package_name>/meshes/...`
-- With `--fixed-legs`: adds `xacro:property` for `leg_joint_type` so leg joints can be set to fixed
+- With `--fixed-legs`: adds `xacro:arg`/`xacro:property` for `leg_joint_type` and `waist_joint_type`
 
 ### Usage
 
 ```bash
-python util/scripts/split_urdf.py -i urdf/robot_gazebo.urdf -p dual_arm_description --fixed-legs
+python util/scripts/split_urdf.py -i urdf/robot_gazebo.urdf -p full_robot_description --fixed-legs
 ```
 
 | Argument | Default | Description |
 |----------|---------|-------------|
 | `-i`, `--input` | `urdf/robot_gazebo.urdf` | Input URDF |
-| `-p`, `--package` | — | ROS package name for mesh paths |
+| `-p`, `--package` | — | ROS package name (e.g. `full_robot_description`) |
 | `-o`, `--output-dir` | `urdf/` | Output directory (creates `joints/` and `links/` subdirs) |
-| `-n`, `--name` | derived from input | Base name for output files |
 | `--damping` | `0.5` | Joint damping value |
 | `--friction` | `0.1` | Joint friction value |
 | `--fixed-legs` | off | Add xacro support for `fixed_legs` argument |
+| `--only-left` | on | Add xacro support for `only_left` argument (locks waist) |
