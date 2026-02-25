@@ -16,7 +16,6 @@ Generates xacro files matching the full_robot_description structure:
 
 Usage:
     python split_urdf.py -i robot_gazebo.urdf -p full_robot_description
-    python split_urdf.py -i robot_gazebo.urdf -p full_robot_description --fixed-legs
 """
 
 import argparse
@@ -212,17 +211,6 @@ def main():
         default=0.1,
         help="Joint friction value (default: 0.1)",
     )
-    parser.add_argument(
-        "--fixed-legs",
-        action="store_true",
-        help="Add xacro support for fixed_legs argument (leg/waist joints become fixed)",
-    )
-    parser.add_argument(
-        "--only-left",
-        action="store_true",
-        default=True,
-        help="Add xacro support for only_left argument (waist locked when true, default: true)",
-    )
     args = parser.parse_args()
 
     # Parse input
@@ -254,12 +242,12 @@ def main():
             dynamics.set("damping", str(args.damping))
             dynamics.set("friction", str(args.friction))
 
-        # Handle fixed_legs: leg joints use ${leg_joint_type}
-        if args.fixed_legs and is_leg_joint(name):
+        # Leg joints use ${leg_joint_type} (controlled by xacro arg fixed_legs)
+        if is_leg_joint(name):
             joint.set("type", "${leg_joint_type}")
 
-        # Handle waist joint type (fixed_legs or only_left)
-        if args.fixed_legs and is_waist_joint(name):
+        # Waist joints use ${waist_joint_type} (controlled by xacro args only_left / fixed_legs)
+        if is_waist_joint(name):
             joint.set("type", "${waist_joint_type}")
 
         child_link = joint.find("child").get("link")
@@ -308,7 +296,7 @@ def main():
         # Write joints file
         if joints:
             header = None
-            if section == "Body" and args.fixed_legs:
+            if section == "Body":
                 header = [
                     f"<!-- {'=' * 66} -->",
                     f"<!-- {'Leg joint type — set fixed_legs:=true to lock leg joints':<65s} -->",
@@ -381,8 +369,7 @@ def main():
 
     print(f"\n  Total: {total_joints} joints, {total_links} links")
     print(f"  Mesh paths: package://{args.package}/meshes/...")
-    if args.fixed_legs:
-        print("  Fixed legs: enabled (use arg fixed_legs:=true)")
+    print("  Xacro args: fixed_legs (default: false), only_left (default: true)")
 
 
 if __name__ == "__main__":
