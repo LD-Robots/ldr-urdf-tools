@@ -18,37 +18,46 @@ import xml.etree.ElementTree as ET
 import yaml
 
 
-def load_patterns(config_path: str) -> list[str]:
-    """Load collision strip patterns from YAML config."""
+def load_config(config_path: str) -> tuple[bool, list[str]]:
+    """Load config. Returns (strip_all, patterns)."""
     with open(config_path) as f:
         cfg = yaml.safe_load(f)
-    patterns = cfg.get("strip_collision", [])
-    return [p.lower() for p in patterns]
+    strip_all = cfg.get("strip_all", False)
+    patterns = [p.lower() for p in cfg.get("strip_collision", [])]
+    return strip_all, patterns
 
 
-def strip_collision(root: ET.Element, patterns: list[str]) -> tuple[int, int]:
-    """Remove <collision> elements whose mesh filename matches any pattern.
+def strip_collision(root: ET.Element, strip_all: bool, patterns: list[str]) -> tuple[int, int]:
+    """Remove <collision> elements from URDF.
 
-    Returns (matched_links, removed_collisions).
+    If strip_all is True, removes all collisions.
+    Otherwise removes only those whose mesh filename matches a pattern.
+
+    Returns (links_affected, removed_collisions).
     """
-    matched_links = 0
+    links_affected = 0
     removed_collisions = 0
 
     for link in root.iter("link"):
         link_matched = False
         for col in list(link.findall("collision")):
-            mesh = col.find(".//mesh")
-            if mesh is None:
-                continue
-            fn = os.path.basename(mesh.get("filename", "")).lower()
-            if any(p in fn for p in patterns):
+            if strip_all:
                 link.remove(col)
                 removed_collisions += 1
                 link_matched = True
+            else:
+                mesh = col.find(".//mesh")
+                if mesh is None:
+                    continue
+                fn = os.path.basename(mesh.get("filename", "")).lower()
+                if any(p in fn for p in patterns):
+                    link.remove(col)
+                    removed_collisions += 1
+                    link_matched = True
         if link_matched:
-            matched_links += 1
+            links_affected += 1
 
-    return matched_links, removed_collisions
+    return links_affected, removed_collisions
 
 
 def main():
@@ -77,8 +86,11 @@ def main():
         args.output = f"{base}_no_collision{ext}"
 
     # Load config
-    patterns = load_patterns(args.config)
-    print(f"Patterns: {patterns}")
+    strip_all, patterns = load_config(args.config)
+    if strip_all:
+        print("Mode: strip ALL collisions")
+    else:
+        print(f"Patterns: {patterns}")
 
     # Parse and strip
     tree = ET.parse(args.input)
@@ -87,7 +99,7 @@ def main():
     total_collisions = sum(
         len(link.findall("collision")) for link in root.iter("link")
     )
-    matched, removed = strip_collision(root, patterns)
+    matched, removed = strip_collision(root, strip_all, patterns)
 
     # Write output
     ET.indent(tree, space="  ")

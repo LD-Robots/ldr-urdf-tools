@@ -142,11 +142,11 @@ def rewrite_mesh_paths(link_elem: ET.Element, package_name: str) -> None:
     for visual in link_elem.findall("visual"):
         for mesh_el in visual.iter("mesh"):
             basename = os.path.basename(mesh_el.get("filename", ""))
-            mesh_el.set("filename", f"package://{package_name}/meshes/{basename}")
+            mesh_el.set("filename", f"package://{package_name}/meshes/visual/{basename}")
     for collision in link_elem.findall("collision"):
         for mesh_el in collision.iter("mesh"):
             basename = os.path.basename(mesh_el.get("filename", ""))
-            mesh_el.set("filename", f"package://{package_name}/meshes/{basename}")
+            mesh_el.set("filename", f"package://{package_name}/meshes/collision/{basename}")
 
 
 # ─── File generation ──────────────────────────────────────────────────────────

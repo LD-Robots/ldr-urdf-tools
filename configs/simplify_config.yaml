@@ -2,6 +2,11 @@
 # Any mesh filename containing one of these substrings (case-insensitive) is removed.
 
 strip_meshes:
+  # Motors
+  - rotor
+  - stator
+  - bearing
+  - rulment
   # Hands
   - l_hand
   - r_hand

@@ -1,6 +1,9 @@
+# Set to true to remove ALL <collision> elements from the URDF.
+strip_all: true
+
 # Mesh filename patterns — any <collision> element whose mesh filename
 # contains one of these substrings (case-insensitive) is removed.
-
+# Ignored when strip_all is true.
 strip_collision:
   # Motors
   - stator
