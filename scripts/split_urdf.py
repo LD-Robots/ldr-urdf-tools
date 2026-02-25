@@ -137,13 +137,16 @@ def elem_to_string(elem: ET.Element, indent: str = "  ") -> str:
     return raw.rstrip().replace(" />", "/>")
 
 
-def rewrite_mesh_paths(elem: ET.Element, package_name: str) -> None:
-    """Rewrite mesh filename attributes to use package:// with the given package name."""
-    for mesh_el in elem.iter("mesh"):
-        fn = mesh_el.get("filename", "")
-        if fn.startswith("package://"):
-            rel = fn[len("package://"):]
-            mesh_el.set("filename", f"package://{package_name}/{rel}")
+def rewrite_mesh_paths(link_elem: ET.Element, package_name: str) -> None:
+    """Rewrite mesh filename attributes to use package://<package>/meshes/..."""
+    for visual in link_elem.findall("visual"):
+        for mesh_el in visual.iter("mesh"):
+            basename = os.path.basename(mesh_el.get("filename", ""))
+            mesh_el.set("filename", f"package://{package_name}/meshes/{basename}")
+    for collision in link_elem.findall("collision"):
+        for mesh_el in collision.iter("mesh"):
+            basename = os.path.basename(mesh_el.get("filename", ""))
+            mesh_el.set("filename", f"package://{package_name}/meshes/{basename}")
 
 
 # ─── File generation ──────────────────────────────────────────────────────────
