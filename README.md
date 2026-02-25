@@ -309,3 +309,35 @@ python util/scripts/split_urdf.py -i urdf/robot_gazebo.urdf -p full_robot_descri
 | `--friction` | `0.1` | Joint friction value |
 | `--fixed-legs` | off | Add xacro support for `fixed_legs` argument |
 | `--only-left` | on | Add xacro support for `only_left` argument (locks waist) |
+
+---
+
+## Utility: Strip collision — `strip_collision.py`
+
+Removes `<collision>` elements from URDF links matching name patterns. Useful for internal sub-assemblies (motors, PCBs, brackets) that slow down physics without adding value.
+
+### Usage
+
+```bash
+python util/scripts/strip_collision.py -i urdf/robot_gazebo.urdf
+python util/scripts/strip_collision.py -i urdf/robot_gazebo.urdf -o urdf/robot_no_collision.urdf
+python util/scripts/strip_collision.py -i urdf/robot_gazebo.urdf -c util/configs/strip_collision.yaml
+```
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `-i`, `--input` | `urdf/robot_gazebo.urdf` | Input URDF |
+| `-o`, `--output` | `<input>_no_collision.urdf` | Output URDF |
+| `-c`, `--config` | `configs/strip_collision.yaml` | YAML config with link name patterns |
+
+### YAML format
+
+```yaml
+strip_collision:
+  - motor
+  - pcb
+```
+
+Any link whose name contains one of these substrings (case-insensitive) will have its `<collision>` elements removed.
+
+**Dependencies:** `pyyaml`

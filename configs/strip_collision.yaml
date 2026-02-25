@@ -1,0 +1,21 @@
+# Mesh filename patterns — any <collision> element whose mesh filename
+# contains one of these substrings (case-insensitive) is removed.
+
+strip_collision:
+  # Motors
+  - stator
+  - rotor
+  # Bearings
+  - bearing
+  - rulment
+  - ball
+  # Hardware
+  - hex_nut
+  - fixation
+  - threaded
+  - spacer
+  # Mechanical
+  - limiter
+  - lever
+  - shoe
+  - back_access
