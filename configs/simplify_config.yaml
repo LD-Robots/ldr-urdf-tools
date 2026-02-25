@@ -1,0 +1,53 @@
+# Mesh patterns to strip from visual/collision elements.
+# Any mesh filename containing one of these substrings (case-insensitive) is removed.
+
+strip_meshes:
+  # Motor hardware
+  - rotor
+  - stator
+  - bearing
+  - rulment
+  - nut
+  - ball_with
+  - threaded_bar
+  - threaded_eye
+  - spacer
+
+  # Ankle internals
+  - lever_ankle
+  - ankle_bearing
+  - upper_ankle_shaft
+  - ankle_shaft
+
+  # Structural plates
+  - fixation_leg
+  - ankle_ear
+  - torso_pelvis_plate
+
+  # Hands
+  - l_hand
+  - r_hand
+
+  # Bracket prefixes (front/back/left/right + top/bottom/mid)
+  - urdf_bb_
+  - urdf_bl_
+  - urdf_bm_
+  - urdf_br_
+  - urdf_btl_
+  - urdf_btu_
+  - urdf_fb_
+  - urdf_fl_
+  - urdf_fm_
+  - urdf_fr_
+  - urdf_ftl_
+  - urdf_ftu_
+  - urdf_lb_
+  - urdf_lbm_
+  - urdf_lm_
+  - urdf_ltl_
+  - urdf_ltu_
+  - urdf_rb_
+  - urdf_rbm_
+  - urdf_rm_
+  - urdf_rtl_
+  - urdf_rtu_

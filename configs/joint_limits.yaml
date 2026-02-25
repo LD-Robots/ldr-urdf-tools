@@ -1,0 +1,147 @@
+# Joint limits configuration
+# For each joint: lower and upper are in radians, effort and velocity in SI units.
+# Modify the values below, then run: python apply_joint_limits.py
+
+joints:
+  # --- Waist ---
+  waist_yaw_joint:
+    lower: -1.5708
+    upper:  1.5708
+    effort: 100
+    velocity: 100
+
+  # --- Left Arm ---
+  left_shoulder_pitch_joint_X6:
+    lower: -3.14159
+    upper:  1.5708
+    effort: 100
+    velocity: 100
+
+  left_shoulder_roll_joint_X6:
+    lower: -0.1
+    upper:  3.0
+    effort: 100
+    velocity: 100
+
+  left_shoulder_yaw_joint_X4:
+    lower: -2.35619
+    upper:  2.35619
+    effort: 100
+    velocity: 100
+
+  left_elbow_pitch_joint_X6:
+    lower: -1.5708
+    upper:  1.5708
+    effort: 100
+    velocity: 100
+
+  left_wrist_yaw_joint_X4:
+    lower: -2.35619
+    upper:  2.35619
+    effort: 100
+    velocity: 100
+
+  left_wrist_roll_joint_X4:
+    lower: -1.39626
+    upper:  1.74533
+    effort: 100
+    velocity: 100
+
+  # --- Right Arm ---
+  right_shoulder_pitch_joint_X6:
+    lower: -3.14159
+    upper:  1.5708
+    effort: 100
+    velocity: 100
+
+  right_shoulder_roll_joint_X6:
+    lower: -3.0
+    upper:  0.1
+    effort: 100
+    velocity: 100
+
+  right_shoulder_yaw_joint_X4:
+    lower: -2.35619
+    upper:  2.35619
+    effort: 100
+    velocity: 100
+
+  right_elbow_pitch_joint_X6:
+    lower: -1.5708
+    upper:  1.5708
+    effort: 100
+    velocity: 100
+
+  right_wrist_yaw_joint_X4:
+    lower: -2.35619
+    upper:  2.35619
+    effort: 100
+    velocity: 100
+
+  right_wrist_roll_joint_X4:
+    lower: -1.74533
+    upper:  1.39626
+    effort: 100
+    velocity: 100
+
+  # --- Left Leg ---
+  left_hip_pitch_joint:
+    lower: -2.53073
+    upper:  1.5708
+    effort: 100
+    velocity: 100
+
+  left_hip_roll_joint:
+    lower: -0.349066
+    upper:  3.14159
+    effort: 100
+    velocity: 100
+
+  left_hip_yaw_joint:
+    lower: -1.5708
+    upper:  1.5708
+    effort: 100
+    velocity: 100
+
+  left_knee_joint:
+    lower: -0.191906
+    upper:  2.33882
+    effort: 100
+    velocity: 100
+
+  left_ankle_pitch_joint:
+    lower: -0.785398
+    upper:  0.785398
+    effort: 100
+    velocity: 100
+
+  # --- Right Leg ---
+  right_hip_pitch_joint:
+    lower: -2.51486
+    upper:  1.58667
+    effort: 100
+    velocity: 100
+
+  right_hip_roll_joint:
+    lower: -3.14005
+    upper:  0.35061
+    effort: 100
+    velocity: 100
+
+  right_hip_yaw_joint:
+    lower: -1.57082
+    upper:  1.57077
+    effort: 100
+    velocity: 100
+
+  right_knee_joint:
+    lower: -0.191906
+    upper:  2.33882
+    effort: 100
+    velocity: 100
+
+  right_ankle_pitch_joint:
+    lower: -0.785398
+    upper:  0.785398
+    effort: 100
+    velocity: 100
