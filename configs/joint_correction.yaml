@@ -1,0 +1,36 @@
+# Joint Correction Configuration
+# Used by joint_correction.py to reorient URDF frames and fix joint axes.
+
+# ─── Global rotation ─────────────────────────────────────────────────────────
+# Defines the rotation from the CAD export base frame to the desired convention.
+#
+# base_frame describes how the CAD export axes map to the real world:
+#   x, y, z: one of "forward", "back", "left", "right", "up", "down"
+#
+# The script computes the rotation needed to reach the target convention:
+#   X = forward, Y = left, Z = up
+#
+# Example: Onshape robot_v1 exports with X=right, Y=forward, Z=up
+# which requires Rz(-90°) to reach X=forward, Y=left, Z=up.
+
+base_frame:
+  x: right
+  y: forward
+  z: up
+
+# ─── Axis conventions ────────────────────────────────────────────────────────
+# Maps joint name keywords to desired rotation axes.
+#
+# Each entry is a keyword (matched case-insensitive against joint name)
+# mapped to the desired axis: "X", "Y", or "Z".
+#
+# If a joint name contains multiple keywords, the first match wins.
+# Joints that match no keyword get their axis inferred from the
+# closest standard axis to the physical rotation direction.
+
+axis_conventions:
+  pitch: Y
+  knee:  Y
+  elbow: Y
+  roll:  X
+  yaw:   Z

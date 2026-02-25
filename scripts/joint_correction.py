@@ -2,12 +2,12 @@
 """
 Joint Correction Script
 - Reorients all frames to Z-up, X-forward, Y-left convention
-- Fixes joint axes: pitch/knee/elbow -> Y, roll -> X, yaw -> Z
+- Fixes joint axes based on configurable keyword → axis mappings
 - Joint origin rpy values become small (close to 0)
 - If physical axis is inverted vs convention, flips limits to keep positive axes
 
 Usage:
-    python joint_correction.py <input_urdf> [--output <output_urdf>]
+    python joint_correction.py <input_urdf> [--config <config.yaml>] [--output <output_urdf>]
 """
 
 import xml.etree.ElementTree as ET
@@ -15,6 +15,7 @@ import argparse
 import sys
 import os
 import math
+import yaml
 from collections import defaultdict, deque
 
 
@@ -88,17 +89,74 @@ def fmt_rpy(r, p, y):
     return fmt_vec(vals)
 
 
+# ─── Config loading ──────────────────────────────────────────────────────────
+
+AXIS_NAME_TO_IDX = {'X': 0, 'Y': 1, 'Z': 2}
+DIRECTION_VECTORS = {
+    'forward': [1, 0, 0], 'back':  [-1, 0, 0],
+    'left':    [0, 1, 0], 'right': [0, -1, 0],
+    'up':      [0, 0, 1], 'down':  [0, 0, -1],
+}
+
+
+def load_config(config_path):
+    """Load joint correction config from YAML.
+
+    Returns (R_global, axis_conventions) where:
+      R_global: 3x3 rotation matrix from CAD base frame to target (X fwd, Y left, Z up)
+      axis_conventions: list of (keyword, axis_index) pairs, e.g. [('pitch', 1), ('roll', 0)]
+    """
+    with open(config_path) as f:
+        cfg = yaml.safe_load(f) or {}
+
+    # --- Global rotation from base_frame config ---
+    bf = cfg.get('base_frame', {})
+    # Source frame columns: what each CAD axis points to in the real world
+    src_x = DIRECTION_VECTORS.get(bf.get('x', 'forward'), [1, 0, 0])
+    src_y = DIRECTION_VECTORS.get(bf.get('y', 'left'), [0, 1, 0])
+    src_z = DIRECTION_VECTORS.get(bf.get('z', 'up'), [0, 0, 1])
+
+    # R_src: columns are source frame axes in world coordinates
+    # R_src[i][j] = [src_x, src_y, src_z][j][i]
+    src_cols = [src_x, src_y, src_z]
+    R_src = [[src_cols[j][i] for j in range(3)] for i in range(3)]
+
+    # Target frame is identity: X=forward, Y=left, Z=up
+    # R_global = R_target @ R_src^T = I @ R_src^T = R_src^T
+    R_global = mt(R_src)
+
+    # --- Axis conventions ---
+    ac = cfg.get('axis_conventions', {})
+    axis_conventions = []
+    for keyword, axis_name in ac.items():
+        idx = AXIS_NAME_TO_IDX.get(axis_name.upper())
+        if idx is not None:
+            axis_conventions.append((keyword.lower(), idx))
+
+    return R_global, axis_conventions
+
+
+def default_config():
+    """Fallback config matching the original hardcoded behavior."""
+    R_global = rz(-math.pi / 2)  # X=right, Y=forward, Z=up -> X=fwd, Y=left, Z=up
+    axis_conventions = [
+        ('pitch', 1), ('knee', 1), ('elbow', 1),
+        ('roll', 0),
+        ('yaw', 2),
+    ]
+    return R_global, axis_conventions
+
+
 # ─── Axis convention ──────────────────────────────────────────────────────────
 
-def get_desired_axis(joint_name):
-    """Standard axis based on joint name: pitch/knee/elbow->Y, roll->X, yaw->Z."""
+def get_desired_axis(joint_name, axis_conventions):
+    """Desired axis based on joint name and configured conventions."""
     n = joint_name.lower()
-    if 'pitch' in n or 'knee' in n or 'elbow' in n:
-        return [0, 1, 0]
-    elif 'roll' in n:
-        return [1, 0, 0]
-    elif 'yaw' in n:
-        return [0, 0, 1]
+    for keyword, idx in axis_conventions:
+        if keyword in n:
+            axis = [0, 0, 0]
+            axis[idx] = 1
+            return axis
     return None
 
 def axis_str(v):
@@ -160,20 +218,6 @@ def build_canonical_frame(v_world, desired_idx):
 
     R = [[cols[j][i] for j in range(3)] for i in range(3)]
     return R, flip
-
-
-# ─── Global rotation: old base frame -> Z-up X-forward Y-left ────────────────
-#
-# From analysis of robot_v1 base frame:
-#   X_old = right,  Y_old = forward,  Z_old = up
-# Desired:
-#   X_new = forward, Y_new = left, Z_new = up
-#
-# Mapping: X_new = Y_old, Y_new = -X_old, Z_new = Z_old
-# This is Rz(-90°) applied to coordinates.
-#
-R_GLOBAL = rz(-math.pi / 2)  # [[0,1,0],[-1,0,0],[0,0,1]]
-R_GLOBAL_INV = mt(R_GLOBAL)
 
 
 # ─── Transform utilities ─────────────────────────────────────────────────────
@@ -264,8 +308,8 @@ def indent_xml(elem, level=0):
 
 # ─── Joint correction ────────────────────────────────────────────────────────
 
-def correct_joints(root):
-    """Reorient all frames to Z-up, X-forward, Y-left and fix joint axes.
+def correct_joints(root, R_global, axis_conventions):
+    """Reorient all frames and fix joint axes.
 
     Two-pass approach:
       Pass 1 - Compute world-frame rotation for every link in the original URDF
@@ -313,7 +357,7 @@ def correct_joints(root):
     R_canon = {root_link: eye()}
 
     # Transform root link elements: old root frame → new world frame
-    transform_link(link_els[root_link], R_GLOBAL)
+    transform_link(link_els[root_link], R_global)
 
     queue = deque([root_link])
     while queue:
@@ -326,7 +370,7 @@ def correct_joints(root):
             xyz_old = parse_vec(origin_el.get('xyz', '0 0 0'))
 
             # Joint xyz in new parent frame
-            xyz_new_world = mv(R_GLOBAL, mv(R_world_old[parent_name], xyz_old))
+            xyz_new_world = mv(R_global, mv(R_world_old[parent_name], xyz_old))
             xyz_new = clean(mv(mt(R_canon[parent_name]), xyz_new_world))
 
             if joint_type == 'revolute':
@@ -334,13 +378,13 @@ def correct_joints(root):
                 axis_el = joint_el.find('axis')
                 axis_local = parse_vec(axis_el.get('xyz', '0 0 1'))
                 v_world_old = mv(R_world_old[child_name], axis_local)
-                v_world_new = mv(R_GLOBAL, v_world_old)
+                v_world_new = mv(R_global, v_world_old)
                 nv = norm3(v_world_new)
                 if nv > 1e-10:
                     v_world_new = [x / nv for x in v_world_new]
 
                 # Desired axis from joint name
-                a_desired = get_desired_axis(joint_name)
+                a_desired = get_desired_axis(joint_name, axis_conventions)
                 if a_desired is not None:
                     desired_idx = a_desired.index(1)
                     if abs(dot3(v_world_new, a_desired)) < 0.5:
@@ -387,7 +431,7 @@ def correct_joints(root):
 
             # Transform child link elements: old child frame → new canonical frame
             R_link_xform = mm(mt(R_canon[child_name]),
-                              mm(R_GLOBAL, R_world_old[child_name]))
+                              mm(R_global, R_world_old[child_name]))
             if child_name in link_els:
                 transform_link(link_els[child_name], R_link_xform)
 
@@ -399,17 +443,32 @@ def correct_joints(root):
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description='Fix joint axes and reorient URDF frames (Z up, X forward, Y left)')
+    parser = argparse.ArgumentParser(description='Fix joint axes and reorient URDF frames')
     parser.add_argument('input_urdf', help='Input URDF file path')
     parser.add_argument('--output', '-o', help='Output URDF file (default: <input>_fixed_axes.urdf)')
+    parser.add_argument('--config', '-c', default='configs/joint_correction.yaml',
+                        help='YAML config (default: configs/joint_correction.yaml)')
     args = parser.parse_args()
 
     if not os.path.exists(args.input_urdf):
         print(f"Error: '{args.input_urdf}' not found.")
         sys.exit(1)
 
+    # Load config
+    if os.path.exists(args.config):
+        R_global, axis_conventions = load_config(args.config)
+        print(f"Config: {args.config}")
+    else:
+        print(f"Warning: config '{args.config}' not found, using defaults")
+        R_global, axis_conventions = default_config()
+
+    # Show config summary
+    axis_labels = {0: 'X', 1: 'Y', 2: 'Z'}
+    conv_str = ', '.join(f'{kw}→{axis_labels[idx]}' for kw, idx in axis_conventions)
+    print(f"Axis conventions: {conv_str}")
+
     print(f"\n{'='*70}")
-    print(f"  Joint Correction  (Z up, X forward, Y left)")
+    print(f"  Joint Correction")
     print(f"{'='*70}")
     print(f"\nParsing: {args.input_urdf}")
 
@@ -429,7 +488,7 @@ def main():
         name = j.get('name')
         axis_el = j.find('axis')
         ax = axis_el.get('xyz', '0 0 1') if axis_el is not None else '0 0 1'
-        desired = get_desired_axis(name)
+        desired = get_desired_axis(name, axis_conventions)
         status = ""
         if desired:
             desired_s = axis_str(desired)
@@ -453,7 +512,7 @@ def main():
         out = f"{base}_fixed_axes{ext}"
 
     print(f"\nCorrecting joints...")
-    corrected = correct_joints(root)
+    corrected = correct_joints(root, R_global, axis_conventions)
 
     indent_xml(corrected)
     tree.write(out, xml_declaration=True, encoding='unicode')

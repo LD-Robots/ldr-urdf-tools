@@ -16,6 +16,7 @@ util/
     split_urdf.py
   configs/                          ← YAML configuration
     simplify_config.yaml            ← mesh strip patterns
+    joint_correction.yaml           ← base frame convention + axis mappings
     joint_limits.yaml               ← joint limits
 urdf/                               ← generated outputs
   robot_simplified.urdf
@@ -141,14 +142,34 @@ Reorients all frames and fixes joint axes to a standard convention.
 ```bash
 python util/scripts/joint_correction.py urdf/robot_simplified.urdf
 python util/scripts/joint_correction.py urdf/robot_simplified.urdf -o urdf/robot_fixed_axes.urdf
+python util/scripts/joint_correction.py urdf/robot_simplified.urdf -c configs/joint_correction.yaml
 ```
 
 | Argument | Default | Description |
 |----------|---------|-------------|
 | `input_urdf` | — | Path to the input URDF file |
 | `-o`, `--output` | `<input>_fixed_axes.urdf` | Output file |
+| `-c`, `--config` | `configs/joint_correction.yaml` | YAML config with base frame + axis conventions |
 
-**Dependencies:** none (pure Python, no numpy)
+### YAML format
+
+```yaml
+# How the CAD export base frame is oriented in the real world
+base_frame:
+  x: right      # forward | back | left | right | up | down
+  y: forward
+  z: up
+
+# Joint name keyword → desired axis (X, Y, or Z)
+axis_conventions:
+  pitch: Y
+  knee:  Y
+  elbow: Y
+  roll:  X
+  yaw:   Z
+```
+
+**Dependencies:** `pyyaml`
 
 ---
 

@@ -16,7 +16,6 @@ import os
 import yaml
 from collections import defaultdict
 
-from joint_correction import get_desired_axis, axis_str
 
 
 # ─── URDF parsing ────────────────────────────────────────────────────────────
@@ -146,17 +145,7 @@ def print_tree(root_link, children, links_info, sub_links, prefix=""):
         conn = "└── " if last else "├── "
         npfx = prefix + ("    " if last else "│   ")
 
-        axis_cur = j['axis']
-        desired = get_desired_axis(j['name'])
-        axis_info = f"axis=[{axis_cur}]"
-        if desired:
-            desired_str = axis_str(desired)
-            if axis_cur != desired_str:
-                axis_info += f" -> [{desired_str}]"
-            else:
-                axis_info += " OK"
-
-        print(f"{prefix}{conn}joint: {j['name']} ({j['type']}) {axis_info}")
+        print(f"{prefix}{conn}joint: {j['name']} ({j['type']}) axis=[{j['axis']}]")
         print_tree(child, children, links_info, sub_links, npfx)
 
 
@@ -186,8 +175,8 @@ def main():
     parser = argparse.ArgumentParser(description='Simplify URDF: merge links, remove sub-links, strip meshes')
     parser.add_argument('input_urdf', help='Input URDF file path')
     parser.add_argument('--output', '-o', help='Output URDF file (default: <input>_simplified.urdf)')
-    parser.add_argument('--config', '-c', default='util/configs/simplify_config.yaml',
-                        help='YAML config with strip_meshes list (default: util/configs/simplify_config.yaml)')
+    parser.add_argument('--config', '-c', default='configs/simplify_config.yaml',
+                        help='YAML config with strip_meshes list (default: configs/simplify_config.yaml)')
     args = parser.parse_args()
 
     if not os.path.exists(args.input_urdf):
@@ -257,22 +246,16 @@ def main():
             m = links_info.get(s, {}).get('mass', 0)
             print(f"  {s}  ({m:.3f} kg) -> '{t}'")
 
-    print(f"\nJoint axis info:")
+    print(f"\nDuplicate joints:")
     seen = set()
+    has_dups = False
     for j in joints_info:
         if j['name'] in seen:
             print(f"  {j['name']}: DUPLICATE (remove)")
-            continue
+            has_dups = True
         seen.add(j['name'])
-        if j['type'] != 'revolute':
-            continue
-        desired = get_desired_axis(j['name'])
-        if desired:
-            desired_str = axis_str(desired)
-            if j['axis'] != desired_str:
-                print(f"  {j['name']}: [{j['axis']}] (fix with joint_correction.py)")
-            else:
-                print(f"  {j['name']}: [{j['axis']}] OK")
+    if not has_dups:
+        print(f"  (none)")
 
     print(f"\n{'='*70}")
     print(f"  KINEMATIC TREE")
