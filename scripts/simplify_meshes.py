@@ -122,7 +122,7 @@ def create_output_urdf(
     """
     Copy URDF, replacing mesh paths to point to simplified directories.
 
-    Handles any source directory in mesh paths (assets/, assets_visual/, etc).
+    Handles any source directory in mesh paths (meshes/, assets/, etc).
     """
     tree = ET.parse(input_urdf)
     root = tree.getroot()
@@ -177,8 +177,8 @@ def main():
     )
     parser.add_argument(
         "--source-dir",
-        default="assets/",
-        help="Directory containing the original STL meshes (default: assets/). "
+        default="meshes/",
+        help="Directory containing the original STL meshes (default: meshes/). "
              "Meshes are always read from here regardless of URDF paths.",
     )
     parser.add_argument(

@@ -245,7 +245,7 @@ python util/scripts/simplify_meshes.py -i urdf/robot_with_limits.urdf -o urdf/ro
 | `-r`, `--ratio` | `0.1` | Fraction of triangles to keep for visual meshes |
 | `--convex-collision` | off | Use convex hulls for collision (recommended for Gazebo) |
 | `--collision-ratio` | same as `-r` | Separate decimation ratio for collision meshes |
-| `--source-dir` | `assets/` | Directory with original STL meshes |
+| `--source-dir` | `meshes/` | Directory with original STL meshes |
 | `--visual-dir` | `urdf/meshes/visual/` | Output directory for visual meshes |
 | `--collision-dir` | `urdf/meshes/collision/` | Output directory for collision meshes |
 | `--min-triangles` | `50000` | Meshes below this threshold are copied without decimation |
