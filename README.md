@@ -9,7 +9,8 @@ robot.urdf                          ← Onshape export (input)
 util/
   scripts/                          ← all pipeline scripts
     build_description.py            ← master script (runs all 4 steps + deploy)
-    urdf_simplify.py
+    urdf_simplify.py                ← merge sub-links, strip meshes, remove duplicates
+    joint_correction.py             ← reorient frames, fix joint axes (Z up, X fwd, Y left)
     apply_joint_limits.py
     simplify_meshes.py
     split_urdf.py
@@ -18,6 +19,7 @@ util/
     joint_limits.yaml               ← joint limits
 urdf/                               ← generated outputs
   robot_simplified.urdf
+  robot_fixed_axes.urdf
   robot_with_limits.urdf
   robot_gazebo.urdf
   joints/gazebo_joints.xacro
@@ -33,15 +35,18 @@ urdf/                               ← generated outputs
 robot.urdf (Onshape export)
     │
     ▼  1. urdf_simplify.py
-urdf/robot_simplified.urdf (clean frames, merged links)
+urdf/robot_simplified.urdf (merged links, stripped meshes)
     │
-    ▼  2. apply_joint_limits.py
+    ▼  2. joint_correction.py
+urdf/robot_fixed_axes.urdf (Z up, X fwd, Y left, clean axes)
+    │
+    ▼  3. apply_joint_limits.py
 urdf/robot_with_limits.urdf (joint limits from YAML)
     │
-    ▼  3. simplify_meshes.py
+    ▼  4. simplify_meshes.py
 urdf/robot_gazebo.urdf (decimated visual + convex collision meshes)
     │
-    ▼  4. split_urdf.py
+    ▼  5. split_urdf.py
 urdf/joints/<name>_joints.xacro + urdf/links/<name>_links.xacro
     │
     ▼  deploy to robot_description package
@@ -51,7 +56,7 @@ urdf/joints/<name>_joints.xacro + urdf/links/<name>_links.xacro
 
 ## Quick start — `build_description.py`
 
-Runs all 4 steps and deploys the results (xacro files + meshes) to a target robot_description package. Run from repo root.
+Runs all 5 steps and deploys the results (xacro files + meshes) to a target robot_description package. Run from repo root.
 
 ```bash
 # Full pipeline with fixed legs support:
@@ -60,7 +65,7 @@ python util/scripts/build_description.py /path/to/dual_arm_description --fixed-l
 # Custom decimation ratio:
 python util/scripts/build_description.py /path/to/dual_arm_description -r 0.2 --fixed-legs
 
-# Skip steps 1-2 if URDF is already simplified:
+# Skip steps 1-3 if URDF is already simplified + corrected:
 python util/scripts/build_description.py /path/to/dual_arm_description --skip-simplify --skip-limits --fixed-legs
 ```
 
@@ -69,8 +74,8 @@ python util/scripts/build_description.py /path/to/dual_arm_description --skip-si
 | `target` | — | Path to target robot_description package |
 | `--source-urdf` | `robot.urdf` | Source URDF from Onshape export |
 | `-r`, `--ratio` | `0.2` | Visual mesh decimation ratio (20%) |
-| `--skip-simplify` | off | Skip step 1, use existing `urdf/robot_simplified.urdf` |
-| `--skip-limits` | off | Skip step 2, use existing `urdf/robot_with_limits.urdf` |
+| `--skip-simplify` | off | Skip steps 1-2, use existing `urdf/robot_fixed_axes.urdf` |
+| `--skip-limits` | off | Skip step 3, use existing `urdf/robot_with_limits.urdf` |
 | `--fixed-legs` | off | Add xacro support for `fixed_legs` argument |
 | `--damping` | `0.5` | Joint damping value |
 | `--friction` | `0.1` | Joint friction value |
@@ -88,7 +93,7 @@ The `<name>` is derived from the package name (e.g. `dual_arm_description` → `
 
 ## Step 1: Simplify URDF structure — `urdf_simplify.py`
 
-Simplifies and reorients URDF files exported from Onshape (via onshape-to-robot).
+Simplifies URDF files exported from Onshape (via onshape-to-robot) by merging sub-links and removing duplicates.
 
 ### What it does
 
@@ -98,13 +103,6 @@ Simplifies and reorients URDF files exported from Onshape (via onshape-to-robot)
    - Removes sub-links (duplicate joints, fixed joints)
    - Merges sub-link masses into their parent main links
    - Strips meshes matching patterns from `simplify_config.yaml` (motor hardware, hands, brackets, etc.)
-4. **Reorients all frames** to standard convention:
-   - Z up, X forward, Y left
-   - Pitch / knee / elbow → `axis="0 1 0"` (Y)
-   - Roll → `axis="1 0 0"` (X)
-   - Yaw → `axis="0 0 1"` (Z)
-5. **Cleans rpy values** — joints get rpy close to `0 0 0`
-6. **Preserves physics** — world-frame axes are identical (or flipped with limits swapped)
 
 ### Usage
 
@@ -124,7 +122,37 @@ python util/scripts/urdf_simplify.py robot.urdf -c util/configs/simplify_config.
 
 ---
 
-## Step 2: Apply joint limits — `apply_joint_limits.py`
+## Step 2: Fix joint axes — `joint_correction.py`
+
+Reorients all frames and fixes joint axes to a standard convention.
+
+### What it does
+
+1. **Reorients all frames** to standard convention:
+   - Z up, X forward, Y left
+   - Pitch / knee / elbow → `axis="0 1 0"` (Y)
+   - Roll → `axis="1 0 0"` (X)
+   - Yaw → `axis="0 0 1"` (Z)
+2. **Cleans rpy values** — joints get rpy close to `0 0 0`
+3. **Preserves physics** — world-frame axes are identical (or flipped with limits swapped)
+
+### Usage
+
+```bash
+python util/scripts/joint_correction.py urdf/robot_simplified.urdf
+python util/scripts/joint_correction.py urdf/robot_simplified.urdf -o urdf/robot_fixed_axes.urdf
+```
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `input_urdf` | — | Path to the input URDF file |
+| `-o`, `--output` | `<input>_fixed_axes.urdf` | Output file |
+
+**Dependencies:** none (pure Python, no numpy)
+
+---
+
+## Step 3: Apply joint limits — `apply_joint_limits.py`
 
 Reads joint limits from a YAML config and writes them into the URDF.
 
@@ -156,7 +184,7 @@ joints:
 
 ---
 
-## Step 3: Simplify meshes — `simplify_meshes.py`
+## Step 4: Simplify meshes — `simplify_meshes.py`
 
 Decimates STL meshes for faster simulation. Uses Open3D's quadric decimation for visual meshes and convex hulls for collision meshes.
 
@@ -200,7 +228,7 @@ python util/scripts/simplify_meshes.py -i urdf/robot_with_limits.urdf -o urdf/ro
 
 ---
 
-## Step 4: Split into xacro — `split_urdf.py`
+## Step 5: Split into xacro — `split_urdf.py`
 
 Splits a monolithic URDF into separate xacro files for joints and links, organized by body section.
 
