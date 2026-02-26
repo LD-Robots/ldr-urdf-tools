@@ -2,20 +2,20 @@
 """
 Split a URDF into separate xacro files per body section.
 
-Generates xacro files matching the full_robot_description structure:
-  urdf/joints/body_joints.xacro    — waist joints + xacro args (fixed_legs, only_left)
-  urdf/joints/left_arm_joints.xacro
-  urdf/joints/right_arm_joints.xacro
-  urdf/joints/left_foot_joints.xacro
-  urdf/joints/right_foot_joints.xacro
-  urdf/links/body_links.xacro      — base + torso links
-  urdf/links/left_arm_links.xacro
-  urdf/links/right_arm_links.xacro
-  urdf/links/left_foot_links.xacro
-  urdf/links/right_foot_links.xacro
+Generates xacro files matching the robot_description structure:
+  <output_dir>/urdf/joints/body_joints.xacro    — waist joints + xacro args (fixed_legs, only_left)
+  <output_dir>/urdf/joints/left_arm_joints.xacro
+  <output_dir>/urdf/joints/right_arm_joints.xacro
+  <output_dir>/urdf/joints/left_foot_joints.xacro
+  <output_dir>/urdf/joints/right_foot_joints.xacro
+  <output_dir>/urdf/links/body_links.xacro      — base + torso links
+  <output_dir>/urdf/links/left_arm_links.xacro
+  <output_dir>/urdf/links/right_arm_links.xacro
+  <output_dir>/urdf/links/left_foot_links.xacro
+  <output_dir>/urdf/links/right_foot_links.xacro
 
 Usage:
-    python split_urdf.py -i robot_gazebo.urdf -p full_robot_description
+    python split_urdf.py -i urdf/robot_gazebo.urdf -p full_robot_description
 """
 
 import argparse
@@ -199,8 +199,8 @@ def main():
     )
     parser.add_argument(
         "-o", "--output-dir",
-        default="urdf/",
-        help="Output directory (default: urdf/). Creates joints/ and links/ subdirs.",
+        default=None,
+        help="Output directory (default: parent dir of input URDF). Creates urdf/joints/ and urdf/links/ subdirs.",
     )
     parser.add_argument(
         "--damping",
@@ -220,9 +220,14 @@ def main():
     tree = ET.parse(args.input)
     root = tree.getroot()
 
+    # Default output dir to <input_dir>/<package_name>
+    if args.output_dir is None:
+        input_dir = os.path.dirname(args.input) or "."
+        args.output_dir = os.path.join(input_dir, args.package)
+
     # Create output directories
-    joints_dir = os.path.join(args.output_dir, "joints")
-    links_dir = os.path.join(args.output_dir, "links")
+    joints_dir = os.path.join(args.output_dir, "urdf", "joints")
+    links_dir = os.path.join(args.output_dir, "urdf", "links")
     os.makedirs(joints_dir, exist_ok=True)
     os.makedirs(links_dir, exist_ok=True)
 
