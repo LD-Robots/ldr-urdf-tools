@@ -1,5 +1,5 @@
 # Set to true to remove ALL <collision> elements from the URDF.
-strip_all: true
+strip_all: false
 
 # Mesh filename patterns — any <collision> element whose mesh filename
 # contains one of these substrings (case-insensitive) is removed.
@@ -12,6 +12,7 @@ strip_collision:
   - bearing
   - rulment
   - ball
+  - bar
   # Hardware
   - hex_nut
   - fixation

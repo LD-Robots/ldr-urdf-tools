@@ -3,34 +3,25 @@
 Reduce mesh complexity (decimate) for all STL files referenced in a URDF.
 
 Uses Open3D's quadric decimation to reduce triangle count while preserving
-shape quality. Outputs simplified meshes to a separate directory and
-generates a new URDF pointing to them.
+shape quality. Outputs simplified meshes and a new URDF into the input
+URDF's directory (meshes/ subfolder, <input>_simplified.urdf).
 
 For collision meshes, can generate convex hulls which are much faster
 for physics engines like Gazebo (ODE/Bullet/DART).
 
 Usage:
-    python simplify_meshes.py                           # defaults
-    python simplify_meshes.py -r 0.1                    # keep 10% of triangles
-    python simplify_meshes.py -i robot.urdf -r 0.05     # custom input, 5%
-    python simplify_meshes.py --convex-collision         # convex hulls for collision
+    python simplify_meshes.py -i robot.urdf             # -> robot_simplified.urdf + meshes/
+    python simplify_meshes.py -i robot.urdf -r 0.05     # keep 5% of triangles
+    python simplify_meshes.py -i robot.urdf --convex-collision  # convex hulls for collision
 """
 
 import argparse
 import os
 import shutil
-import struct
 import xml.etree.ElementTree as ET
 
 import numpy as np
 import open3d as o3d
-
-
-def count_stl_triangles(path: str) -> int:
-    """Quick triangle count from binary STL header (no full parse needed)."""
-    with open(path, "rb") as f:
-        f.read(80)
-        return struct.unpack("<I", f.read(4))[0]
 
 
 def decimate_mesh(input_path: str, output_path: str, ratio: float) -> dict:
@@ -166,8 +157,8 @@ def main():
     )
     parser.add_argument(
         "-o", "--output",
-        default="urdf/robot_gazebo.urdf",
-        help="Output URDF file (default: urdf/robot_gazebo.urdf)",
+        default=None,
+        help="Output URDF file (default: <input>_simplified.urdf)",
     )
     parser.add_argument(
         "-r", "--ratio",
@@ -177,8 +168,8 @@ def main():
     )
     parser.add_argument(
         "--source-dir",
-        default="assets/",
-        help="Directory containing the original STL meshes (default: assets/). "
+        default=None,
+        help="Directory containing the original STL meshes (default: <input_dir>/assets/). "
              "Meshes are always read from here regardless of URDF paths.",
     )
     parser.add_argument(
@@ -195,26 +186,34 @@ def main():
     )
     parser.add_argument(
         "--visual-dir",
-        default="urdf/meshes/visual/",
-        help="Output directory for visual meshes (default: urdf/meshes/visual/)",
+        default=None,
+        help="Output directory for visual meshes (default: <input_dir>/meshes/visual/)",
     )
     parser.add_argument(
         "--collision-dir",
-        default="urdf/meshes/collision/",
-        help="Output directory for collision meshes (default: urdf/meshes/collision/)",
-    )
-    parser.add_argument(
-        "--min-triangles",
-        type=int,
-        default=50000,
-        help="Skip decimation for meshes with fewer triangles than this (default: 50000). "
-             "Small meshes are copied as-is.",
+        default=None,
+        help="Output directory for collision meshes (default: <input_dir>/meshes/collision/)",
     )
     args = parser.parse_args()
 
+    # Derive defaults relative to the input URDF's directory
+    input_dir = os.path.dirname(args.input) or "."
+
+    if args.output is None:
+        base, ext = os.path.splitext(args.input)
+        args.output = f"{base}_simplified{ext}"
+
+    if args.visual_dir is None:
+        args.visual_dir = os.path.join(input_dir, "meshes", "visual") + "/"
+
+    if args.collision_dir is None:
+        args.collision_dir = os.path.join(input_dir, "meshes", "collision") + "/"
+
+    if args.source_dir is None:
+        args.source_dir = os.path.join(input_dir, "assets") + "/"
+
     urdf_path = args.input
 
-    # Resolve directories relative to CWD (not input file location)
     source_dir = args.source_dir
     visual_out = args.visual_dir
     separate_collision = args.convex_collision or args.collision_ratio is not None
@@ -253,34 +252,7 @@ def main():
         orig_size = os.path.getsize(mesh_path)
         total_orig_size += orig_size
 
-        tri_count = count_stl_triangles(mesh_path)
         visual_path = os.path.join(visual_out, basename)
-
-        # Skip decimation for small meshes
-        if tri_count < args.min_triangles:
-            if os.path.abspath(mesh_path) != os.path.abspath(visual_path):
-                shutil.copy2(mesh_path, visual_path)
-            total_original += tri_count
-            total_visual += tri_count
-            total_new_size += orig_size
-            print(
-                f"  {basename:40s}  {tri_count:>8,} tri  "
-                f"COPY (under {args.min_triangles:,} threshold)"
-            )
-            # Collision for small meshes
-            if collision_out:
-                col_path = os.path.join(collision_out, basename)
-                if args.convex_collision:
-                    stats_c = convex_hull_mesh(mesh_path, col_path)
-                    total_collision += stats_c["final"]
-                    print(
-                        f"  {'  (collision convex)':40s}  "
-                        f"{tri_count:>8,} -> {stats_c['final']:>8,} tri"
-                    )
-                else:
-                    shutil.copy2(mesh_path, col_path)
-                    total_collision += tri_count
-            continue
 
         # Visual mesh
         stats_v = decimate_mesh(mesh_path, visual_path, args.ratio)
