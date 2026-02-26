@@ -3,6 +3,7 @@
 Split a URDF into separate xacro files per body section.
 
 Generates xacro files matching the robot_description structure:
+  <output_dir>/urdf/full_robot.urdf.xacro        — top-level xacro with includes
   <output_dir>/urdf/joints/body_joints.xacro    — waist joints + xacro args (fixed_legs, only_left)
   <output_dir>/urdf/joints/left_arm_joints.xacro
   <output_dir>/urdf/joints/right_arm_joints.xacro
@@ -181,6 +182,39 @@ def build_section_xacro(elements: list[str], section_name: str,
     return "\n".join(lines)
 
 
+def build_top_level_xacro(robot_name: str, package_name: str,
+                          active_sections: list[str],
+                          has_links: dict[str, bool],
+                          has_joints: dict[str, bool]) -> str:
+    """Build the top-level xacro that includes all per-section files."""
+    lines = [
+        '<?xml version="1.0"?>',
+        f'<robot name="{robot_name}" xmlns:xacro="http://www.ros.org/wiki/xacro">',
+        "",
+        "  <!-- Links -->",
+    ]
+    for stem in active_sections:
+        if has_links.get(stem, False):
+            lines.append(
+                f'  <xacro:include filename="$(find {package_name})'
+                f'/urdf/links/{stem}_links.xacro"/>'
+            )
+
+    lines.append("")
+    lines.append("  <!-- Joints -->")
+    for stem in active_sections:
+        if has_joints.get(stem, False):
+            lines.append(
+                f'  <xacro:include filename="$(find {package_name})'
+                f'/urdf/joints/{stem}_joints.xacro"/>'
+            )
+
+    lines.append("")
+    lines.append("</robot>")
+    lines.append("")
+    return "\n".join(lines)
+
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -220,10 +254,9 @@ def main():
     tree = ET.parse(args.input)
     root = tree.getroot()
 
-    # Default output dir to <input_dir>/<package_name>
+    # Default output dir to the directory containing the input URDF
     if args.output_dir is None:
-        input_dir = os.path.dirname(args.input) or "."
-        args.output_dir = os.path.join(input_dir, args.package)
+        args.output_dir = os.path.dirname(args.input) or "."
 
     # Create output directories
     joints_dir = os.path.join(args.output_dir, "urdf", "joints")
@@ -292,6 +325,8 @@ def main():
 
     # ── Write per-section files ──
     active_sections = []  # sections that have content
+    has_links = {}   # stem -> bool
+    has_joints = {}  # stem -> bool
 
     for section, stem in SECTION_FILES.items():
         joints = joints_by_section.get(section, [])
@@ -300,6 +335,8 @@ def main():
         if not joints and not links:
             continue
         active_sections.append(stem)
+        has_links[stem] = bool(links)
+        has_joints[stem] = bool(joints)
 
         # Write joints file
         if joints:
@@ -342,12 +379,23 @@ def main():
         with open(path, "w") as f:
             f.write(content)
         active_sections.append("other")
+        has_joints["other"] = True
 
     if other_links:
         content = build_section_xacro(other_links, "Other")
         path = os.path.join(links_dir, "other_links.xacro")
         with open(path, "w") as f:
             f.write(content)
+        has_links["other"] = True
+
+    # ── Write top-level xacro ──
+    robot_name = root.get("name", "robot")
+    top_level = build_top_level_xacro(
+        robot_name, args.package, active_sections, has_links, has_joints
+    )
+    top_level_path = os.path.join(args.output_dir, "urdf", "full_robot.urdf.xacro")
+    with open(top_level_path, "w") as f:
+        f.write(top_level)
 
     # ── Summary ──
     total_joints = sum(len(v) for v in joints_by_section.values())
@@ -375,6 +423,7 @@ def main():
         if other_links:
             print(f"    {os.path.join(links_dir, 'other_links.xacro')} ({len(other_links)} links)")
 
+    print(f"\n  Top-level: {top_level_path}")
     print(f"\n  Total: {total_joints} joints, {total_links} links")
     print(f"  Mesh paths: package://{args.package}/meshes/...")
     print("  Xacro args: fixed_legs (default: false), only_left (default: true)")
