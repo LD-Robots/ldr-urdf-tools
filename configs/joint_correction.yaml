@@ -14,8 +14,8 @@
 # which requires Rz(-90°) to reach X=forward, Y=left, Z=up.
 
 base_frame:
-  x: right
-  y: forward
+  x: left
+  y: back
   z: up
 
 # ─── Axis conventions ────────────────────────────────────────────────────────
