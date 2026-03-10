@@ -6,7 +6,7 @@
 
 joints:
   # --- Waist ---
-  waist_yaw_joint:
+  waist_yaw_joint_X8:
     lower: -1.57
     upper:  1.57
     effort: 43
@@ -113,7 +113,7 @@ joints:
     damping: 0.114
 
   # --- Left Leg ---
-  left_hip_pitch_joint:
+  left_hip_pitch_joint_X8:
     lower: -2.53
     upper:  1.57
     effort: 43
@@ -121,7 +121,7 @@ joints:
     friction: 3.21
     damping: 0.321
 
-  left_hip_roll_joint:
+  left_hip_roll_joint_X8:
     lower: -0.35
     upper:  3.14
     effort: 43
@@ -129,7 +129,7 @@ joints:
     friction: 3.21
     damping: 0.321
 
-  left_hip_yaw_joint:
+  left_hip_yaw_joint_X8:
     lower: -1.57
     upper:  1.57
     effort: 43
@@ -137,7 +137,7 @@ joints:
     friction: 3.21
     damping: 0.321
 
-  left_knee_joint:
+  left_knee_joint_X8:
     lower: -0.17
     upper:  1.57
     effort: 43
@@ -145,24 +145,24 @@ joints:
     friction: 3.21
     damping: 0.321
 
-  left_ankle_roll_joint:
+  left_ankle_roll_joint_X4:
     lower: -0.79
     upper:  0.79
-    effort: 43
-    velocity: 13.3
-    friction: 3.21
-    damping: 0.321
+    effort: 10.5
+    velocity: 8.69
+    friction: 1.14
+    damping: 0.114
 
-  left_ankle_pitch_joint:
+  left_ankle_pitch_joint_X4:
     lower: -0.79
     upper:  0.79
-    effort: 43
-    velocity: 13.3
-    friction: 3.21
-    damping: 0.321
+    effort: 10.5
+    velocity: 8.69
+    friction: 1.14
+    damping: 0.114
 
   # --- Right Leg ---
-  right_hip_pitch_joint:
+  right_hip_pitch_joint_X8:
     lower: -2.53
     upper:  1.57
     effort: 43
@@ -170,7 +170,7 @@ joints:
     friction: 3.21
     damping: 0.321
 
-  right_hip_roll_joint:
+  right_hip_roll_joint_X8:
     lower: -3.14
     upper:  0.35
     effort: 43
@@ -178,7 +178,7 @@ joints:
     friction: 3.21
     damping: 0.321
 
-  right_hip_yaw_joint:
+  right_hip_yaw_joint_X8:
     lower: -1.57
     upper:  1.57
     effort: 43
@@ -186,7 +186,7 @@ joints:
     friction: 3.21
     damping: 0.321
 
-  right_knee_joint:
+  right_knee_joint_X8:
     lower: -0.17
     upper:  1.57
     effort: 43
@@ -194,19 +194,19 @@ joints:
     friction: 3.21
     damping: 0.321
 
-  right_ankle_roll_joint:
+  right_ankle_roll_joint_X4:
     lower: -0.79
     upper:  0.79
-    effort: 43
-    velocity: 13.3
-    friction: 3.21
-    damping: 0.321
+    effort: 10.5
+    velocity: 8.69
+    friction: 1.14
+    damping: 0.114
 
-  right_ankle_pitch_joint:
+  right_ankle_pitch_joint_X4:
     lower: -0.79
     upper:  0.79
-    effort: 43
-    velocity: 13.3
-    friction: 3.21
-    damping: 0.321
+    effort: 10.5
+    velocity: 8.69
+    friction: 1.14
+    damping: 0.114
     
