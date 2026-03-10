@@ -1,5 +1,7 @@
 # Joint limits configuration
 # For each joint: lower and upper are in radians, effort and velocity in SI units.
+# friction (N·m) = back-drive torque from actuator datasheet
+# damping (N·m·s/rad) = estimated viscous damping coefficient
 # Modify the values below, then run: python apply_joint_limits.py
 
 joints:
@@ -7,154 +9,204 @@ joints:
   waist_yaw_joint:
     lower: -1.57
     upper:  1.57
-    effort: 100
-    velocity: 100
+    effort: 43
+    velocity: 13.3
+    friction: 3.21
+    damping: 0.321
 
   # --- Left Arm ---
   left_shoulder_pitch_joint_X6:
     lower: -3.02
     upper:  1.69
-    effort: 100
-    velocity: 100
+    effort: 20
+    velocity: 16.02
+    friction: 1.6
+    damping: 0.16
 
   left_shoulder_roll_joint_X6:
     lower: -0.21
     upper:  2.93
-    effort: 100
-    velocity: 100
+    effort: 20
+    velocity: 16.02
+    friction: 1.6
+    damping: 0.16
 
   left_shoulder_yaw_joint_X4:
     lower: -1.75
     upper:  2.97
-    effort: 100
-    velocity: 100
+    effort: 10.5
+    velocity: 8.69
+    friction: 1.14
+    damping: 0.114
 
   left_elbow_pitch_joint_X6:
     lower: -1.31
     upper:  1.83
-    effort: 100
-    velocity: 100
+    effort: 20
+    velocity: 16.02
+    friction: 1.6
+    damping: 0.16
 
   left_wrist_yaw_joint_X4:
     lower: -2.36
     upper:  2.36
-    effort: 100
-    velocity: 100
+    effort: 10.5
+    velocity: 8.69
+    friction: 1.14
+    damping: 0.114
 
   left_wrist_roll_joint_X4:
     lower: -1.57
     upper:  1.57
-    effort: 100
-    velocity: 100
+    effort: 10.5
+    velocity: 8.69
+    friction: 1.14
+    damping: 0.114
 
   # --- Right Arm ---
   right_shoulder_pitch_joint_X6:
     lower: -3.02
     upper:  1.69
-    effort: 100
-    velocity: 100
+    effort: 20
+    velocity: 16.02
+    friction: 1.6
+    damping: 0.16
 
   right_shoulder_roll_joint_X6:
     lower: -2.93
     upper:  0.21
-    effort: 100
-    velocity: 100
+    effort: 20
+    velocity: 16.02
+    friction: 1.6
+    damping: 0.16
 
   right_shoulder_yaw_joint_X4:
     lower: -2.97
     upper:  1.75
-    effort: 100
-    velocity: 100
+    effort: 10.5
+    velocity: 8.69
+    friction: 1.14
+    damping: 0.114
 
   right_elbow_pitch_joint_X6:
     lower: -1.31
     upper:  1.83
-    effort: 100
-    velocity: 100
+    effort: 20
+    velocity: 16.02
+    friction: 1.6
+    damping: 0.16
 
   right_wrist_yaw_joint_X4:
     lower: -2.36
     upper:  2.36
-    effort: 100
-    velocity: 100
+    effort: 10.5
+    velocity: 8.69
+    friction: 1.14
+    damping: 0.114
 
   right_wrist_roll_joint_X4:
     lower: -1.57
     upper:  1.57
-    effort: 100
-    velocity: 100
+    effort: 10.5
+    velocity: 8.69
+    friction: 1.14
+    damping: 0.114
 
   # --- Left Leg ---
   left_hip_pitch_joint:
     lower: -2.53
     upper:  1.57
-    effort: 100
-    velocity: 100
+    effort: 43
+    velocity: 13.3
+    friction: 3.21
+    damping: 0.321
 
   left_hip_roll_joint:
     lower: -0.35
     upper:  3.14
-    effort: 100
-    velocity: 100
+    effort: 43
+    velocity: 13.3
+    friction: 3.21
+    damping: 0.321
 
   left_hip_yaw_joint:
     lower: -1.57
     upper:  1.57
-    effort: 100
-    velocity: 100
+    effort: 43
+    velocity: 13.3
+    friction: 3.21
+    damping: 0.321
 
   left_knee_joint:
     lower: -0.17
     upper:  1.57
-    effort: 100
-    velocity: 100
+    effort: 43
+    velocity: 13.3
+    friction: 3.21
+    damping: 0.321
 
   left_ankle_roll_joint:
     lower: -0.79
     upper:  0.79
-    effort: 100
-    velocity: 100
+    effort: 43
+    velocity: 13.3
+    friction: 3.21
+    damping: 0.321
 
   left_ankle_pitch_joint:
     lower: -0.79
     upper:  0.79
-    effort: 100
-    velocity: 100
+    effort: 43
+    velocity: 13.3
+    friction: 3.21
+    damping: 0.321
 
   # --- Right Leg ---
   right_hip_pitch_joint:
     lower: -2.53
     upper:  1.57
-    effort: 100
-    velocity: 100
+    effort: 43
+    velocity: 13.3
+    friction: 3.21
+    damping: 0.321
 
   right_hip_roll_joint:
     lower: -3.14
     upper:  0.35
-    effort: 100
-    velocity: 100
+    effort: 43
+    velocity: 13.3
+    friction: 3.21
+    damping: 0.321
 
   right_hip_yaw_joint:
     lower: -1.57
     upper:  1.57
-    effort: 100
-    velocity: 100
+    effort: 43
+    velocity: 13.3
+    friction: 3.21
+    damping: 0.321
 
   right_knee_joint:
     lower: -0.17
     upper:  1.57
-    effort: 100
-    velocity: 100
+    effort: 43
+    velocity: 13.3
+    friction: 3.21
+    damping: 0.321
 
   right_ankle_roll_joint:
     lower: -0.79
     upper:  0.79
-    effort: 100
-    velocity: 100
+    effort: 43
+    velocity: 13.3
+    friction: 3.21
+    damping: 0.321
 
   right_ankle_pitch_joint:
     lower: -0.79
     upper:  0.79
-    effort: 100
-    velocity: 100
+    effort: 43
+    velocity: 13.3
+    friction: 3.21
+    damping: 0.321
     

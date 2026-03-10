@@ -40,6 +40,14 @@ def apply_limits(input_urdf: str, config_path: str, output_urdf: str) -> None:
         limit_elem.set("upper", str(limits["upper"]))
         limit_elem.set("effort", str(limits.get("effort", 10)))
         limit_elem.set("velocity", str(limits.get("velocity", 10)))
+
+        if "friction" in limits or "damping" in limits:
+            dynamics_elem = joint.find("dynamics")
+            if dynamics_elem is None:
+                dynamics_elem = ET.SubElement(joint, "dynamics")
+            dynamics_elem.set("friction", str(limits.get("friction", 0)))
+            dynamics_elem.set("damping", str(limits.get("damping", 0)))
+
         applied.append(name)
 
     for name in joint_limits:
