@@ -21,6 +21,7 @@ Usage:
 
 import argparse
 import os
+import re
 import xml.etree.ElementTree as ET
 from collections import OrderedDict
 
@@ -47,6 +48,29 @@ SECTION_FILES = OrderedDict([
 
 # Joints classified as leg joints (for fixed_legs xacro support)
 LEG_JOINT_PATTERNS = ["hip", "knee", "ankle"]
+
+
+def extract_actuator_type(joint_name: str) -> str | None:
+    """Extract actuator type suffix from joint name (e.g. 'X8' from 'waist_yaw_joint_X8')."""
+    match = re.search(r'_([A-Z]\d+)$', joint_name)
+    return match.group(1) if match else None
+
+
+def apply_actuator_properties(joint: ET.Element) -> None:
+    """Replace limit effort/velocity and dynamics damping/friction with xacro actuator properties."""
+    actuator = extract_actuator_type(joint.get("name", ""))
+    if not actuator:
+        return
+
+    limit = joint.find("limit")
+    if limit is not None:
+        limit.set("effort", f"${{{actuator}_moderate_effort}}")
+        limit.set("velocity", f"${{{actuator}_rated_velocity}}")
+
+    dynamics = joint.find("dynamics")
+    if dynamics is not None:
+        dynamics.set("damping", f"${{{actuator}_damping}}")
+        dynamics.set("friction", f"${{{actuator}_friction}}")
 
 
 def classify_joint(joint_name: str) -> str:
@@ -282,6 +306,9 @@ def main():
             dynamics = ET.SubElement(joint, "dynamics")
             dynamics.set("damping", str(args.damping))
             dynamics.set("friction", str(args.friction))
+
+        # Replace limit/dynamics values with xacro actuator properties
+        apply_actuator_properties(joint)
 
         # Leg joints use ${leg_joint_type} (controlled by xacro arg fixed_legs)
         if is_leg_joint(name):
