@@ -100,8 +100,12 @@ def _package_prefix(dir_path: str) -> str:
     """Strip leading directories before 'meshes/' for package:// paths."""
     idx = dir_path.find("meshes/")
     if idx >= 0:
-        return dir_path[idx:]
-    return dir_path
+        prefix = dir_path[idx:]
+    else:
+        prefix = dir_path
+    if not prefix.endswith("/"):
+        prefix += "/"
+    return prefix
 
 
 def create_output_urdf(
